@@ -13,7 +13,7 @@ const Videogrid = () => {
       } catch (error) {
         console.log(error);
       } finally {
-        setloading(false);
+        setLoading(false);
       }
     };
     fetchvideo();
