@@ -12,9 +12,9 @@ export const uploadvideo = async (req, res) => {
       const file = new video({
         videotitle: req.body.videotitle,
         filename: req.file.originalname,
-        filepath: req.file.path,
+        filepath: req.file.path.replace(/\\/g, "/"),
         filetype: req.file.mimetype,
-        filesize: req.file.size,
+        filesize: String(req.file.size),
         videochanel: req.body.videochanel,
         uploader: req.body.uploader,
         thumbnail: req.body.thumbnail,
@@ -24,7 +24,7 @@ export const uploadvideo = async (req, res) => {
       return res.status(201).json("file uploaded successfully");
     } catch (error) {
       console.error(" error:", error);
-      return res.status(500).json({ message: "Something went wrong" });
+      return res.status(500).json({ message: error.message || "Something went wrong" });
     }
   }
 };

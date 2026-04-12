@@ -18,11 +18,12 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 import path from "path";
+import { uploadsDir } from "./filehelper/filehelper.js";
 import { sendmail } from "./mails/mails.js";
 app.use(cors());
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
-app.use("/uploads", express.static(path.join("uploads")));
+app.use("/uploads", express.static(path.join(uploadsDir)));
 app.use("/subscription", subscriptionroutes);
 app.get("/", (req, res) => {
   res.send("You tube backend is working");

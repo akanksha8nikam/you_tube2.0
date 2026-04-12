@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Progress } from "./ui/progress";
 import axiosInstance from "@/lib/axiosinstance";
+import axios from "axios";
 import { useRouter } from "next/router";
 
 const VideoUploader = ({ channelId, channelName }: any) => {
@@ -18,11 +19,6 @@ const VideoUploader = ({ channelId, channelName }: any) => {
   const [duration, setDuration] = useState("");
   const [uploadComplete, setUploadComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const directBackendUrl =
-    (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || "http://localhost:5000").replace(
-      /\/$/,
-      ""
-    );
   const handlefilechange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -99,7 +95,8 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     try {
       setIsUploading(true);
       setUploadProgress(0);
-      const res = await axiosInstance.post(`${directBackendUrl}/video/upload`, formdata, {
+      const uploadUrl = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/video/upload` : "http://localhost:5000/video/upload";
+      const res = await axios.post(uploadUrl, formdata, {
         onUploadProgress: (progresEvent: any) => {
           const progress = Math.round(
             (progresEvent.loaded * 100) / progresEvent.total

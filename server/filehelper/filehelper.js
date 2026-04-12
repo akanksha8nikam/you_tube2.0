@@ -1,8 +1,12 @@
 "use strict";
 import multer from "multer";
+import path from "path";
+
+export const uploadsDir = "uploads";
+
 const storage = multer.diskStorage({
   destination: (req, res, cb) => {
-    cb(null, "uploads");
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     cb(
@@ -18,5 +22,11 @@ const filefilter = (req, file, cb) => {
     cb(null, false);
   }
 };
-const upload = multer({ storage: storage, fileFilter: filefilter });
+const upload = multer({ 
+  storage: storage, 
+  fileFilter: filefilter,
+  limits: {
+    fieldSize: 10 * 1024 * 1024, // 10 MB for base64 thumbnails
+  }
+});
 export default upload;
