@@ -6,14 +6,23 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Progress } from "./ui/progress";
 import axiosInstance from "@/lib/axiosinstance";
+import { useRouter } from "next/router";
 
 const VideoUploader = ({ channelId, channelName }: any) => {
+  const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [duration, setDuration] = useState("");
   const [uploadComplete, setUploadComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const directBackendUrl =
+    (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || "http://localhost:5000").replace(
+      /\/$/,
+      ""
+    );
   const handlefilechange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -31,6 +40,27 @@ const VideoUploader = ({ channelId, channelName }: any) => {
       if (!videoTitle) {
         setVideoTitle(filename);
       }
+      
+      // Generate thumbnail
+      const video = document.createElement("video");
+      video.src = URL.createObjectURL(file);
+      video.load();
+      video.onloadedmetadata = () => {
+        const d = video.duration;
+        const mins = Math.floor(d / 60);
+        const secs = Math.floor(d % 60);
+        setDuration(`${mins}:${secs.toString().padStart(2, "0")}`);
+        video.currentTime = 1; // Capture frame at 1 second
+      };
+      video.onseeked = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        setThumbnail(canvas.toDataURL("image/jpeg", 0.7));
+        URL.revokeObjectURL(video.src);
+      };
     }
   };
   const resetForm = () => {
@@ -47,6 +77,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     if (isUploading) {
       toast.error("Your video upload has been cancelled");
     }
+    resetForm(); // Actually reset the form when cancelling
   };
   const handleUpload = async () => {
     if (!videoFile || !videoTitle.trim()) {
@@ -58,14 +89,17 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     formdata.append("videotitle", videoTitle);
     formdata.append("videochanel", channelName);
     formdata.append("uploader", channelId);
+    if (thumbnail) {
+      formdata.append("thumbnail", thumbnail);
+    }
+    if (duration) {
+      formdata.append("duration", duration);
+    }
     console.log(formdata)
     try {
       setIsUploading(true);
       setUploadProgress(0);
-      const res = await axiosInstance.post("/video/upload", formdata, {
-         headers: {
-    "Content-Type": "multipart/form-data", // ✅ MUST for FormData
-  },
+      const res = await axiosInstance.post(`${directBackendUrl}/video/upload`, formdata, {
         onUploadProgress: (progresEvent: any) => {
           const progress = Math.round(
             (progresEvent.loaded * 100) / progresEvent.total
@@ -75,6 +109,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
       });
       toast.success("Upload successfully");
       resetForm();
+      router.push("/");
     } catch (error) {
       console.error("Error uploading video:", error);
       toast.error("There was an error uploading your video. Please try again.");
@@ -123,7 +158,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
                 </p>
               </div>
               {!isUploading && (
-                <Button variant="ghost" size="icon" onClick={cancelUpload}>
+                <Button variant="ghost" size="icon" onClick={cancelUpload} className="text-blue-900 hover:text-blue-950 hover:bg-blue-50">
                   <X className="w-5 h-5" />
                 </Button>
               )}
@@ -161,7 +196,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
             <div className="flex justify-end gap-3">
               {!uploadComplete && (
                 <>
-                  <Button onClick={cancelUpload} disabled={uploadComplete}>
+                  <Button onClick={cancelUpload} disabled={uploadComplete} className="bg-blue-800 hover:bg-blue-900 text-white">
                     Cancel
                   </Button>
                   <Button
@@ -169,6 +204,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
                     disabled={
                       isUploading || !videoTitle.trim() || uploadComplete
                     }
+                    className="bg-blue-900 hover:bg-blue-950 text-white"
                   >
                     {isUploading ? "Uploading..." : "Upload"}
                   </Button>

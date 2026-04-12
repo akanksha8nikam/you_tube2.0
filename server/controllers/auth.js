@@ -41,3 +41,31 @@ export const updateprofile = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const getUserById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    let user;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      user = await users.findById(id);
+    }
+    
+    // If not found by ID, or ID was not a valid ObjectId, try finding by name or channelname
+    if (!user) {
+      user = await users.findOne({ 
+        $or: [
+          { name: id },
+          { channelname: id }
+        ]
+      });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ result: user });
+  } catch (error) {
+    console.error("Fetch user error:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};

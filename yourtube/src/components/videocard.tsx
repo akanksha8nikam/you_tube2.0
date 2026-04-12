@@ -1,21 +1,77 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import { useUser } from "@/lib/AuthContext";
+import axiosInstance from "@/lib/axiosinstance";
+import { Trash2, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 const videos = "/video/vdo.mp4";
 export default function VideoCard({ video }: any) {
+  const { user } = useUser();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newTitle, setNewTitle] = useState(video?.videotitle || "");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleRename = async () => {
+    if (!newTitle.trim()) {
+      toast.error("Title cannot be empty");
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      await axiosInstance.patch(`/video/update/${video._id}`, {
+        videotitle: newTitle,
+        uploader: user._id,
+      });
+      toast.success("Video title updated");
+      setIsRenaming(false);
+      window.location.reload();
+    } catch (err) {
+      toast.error("Failed to rename video");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
-    <Link href={`/watch/${video?._id}`} className="group">
-      <div className="space-y-3">
+    <div className="group relative">
+      <Link href={`/watch/${video?._id}`} className="block space-y-3">
         <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
-          <video
-            src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${video?.filepath}`}
-            className="object-cover group-hover:scale-105 transition-transform duration-200"
-          />
-          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded">
-            10:24
+          {video?.thumbnail ? (
+            <img
+              src={video.thumbnail}
+              alt={video.videotitle}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            />
+          ) : (
+            <video
+              src={`/api/proxy/${(video?.filepath || "").replace(/\\/g, "/")}`}
+              className="object-cover group-hover:scale-105 transition-transform duration-200"
+              disablePictureInPicture
+              controlsList="nodownload noplaybackrate nopictureinpicture"
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          )}
+          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[11px] font-medium px-1.5 py-0.5 rounded shadow-sm backdrop-blur-[2px]">
+            {video?.duration || (() => {
+              const seed = (video?._id || "").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+              const mins = (seed % 12) + 1;
+              const secs = (seed % 60).toString().padStart(2, '0');
+              return `${mins}:${secs}`;
+            })()}
           </div>
         </div>
 
@@ -35,17 +91,88 @@ export default function VideoCard({ video }: any) {
               {video?.videochanel}
             </p>
 
-            <p className="text-sm text-gray-600">
-              {video?.views?.toLocaleString() ?? 0} views •{" "}
-              {video?.createdAt
-                ? formatDistanceToNow(new Date(video.createdAt), {
-                    addSuffix: true,
-                  })
-                : "just now"}
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-sm text-gray-600">
+                {video?.views?.toLocaleString() ?? 0} views •{" "}
+                {video?.createdAt
+                  ? formatDistanceToNow(new Date(video.createdAt), {
+                      addSuffix: true,
+                    })
+                  : "just now"}
+              </p>
+              
+              {user?._id === video?.uploader && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsRenaming(true);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-blue-900 hover:bg-blue-50 rounded transition-all"
+                    title="Rename Video"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (confirm("Are you sure you want to delete this video?")) {
+                        try {
+                          await axiosInstance.delete(`/video/delete/${video._id}?uploader=${user._id}`, {
+                            data: { uploader: user._id }
+                          });
+                          toast.success("Video deleted");
+                          window.location.reload();
+                        } catch (err) {
+                          toast.error("Failed to delete video");
+                        }
+                      }
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                    title="Delete Video"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      
+      <Dialog open={isRenaming} onOpenChange={setIsRenaming}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Video</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Enter new title"
+              className="w-full"
+            />
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              onClick={handleRename}
+              disabled={isUpdating}
+              className="bg-blue-900 hover:bg-blue-950 text-white flex-1"
+            >
+              {isUpdating ? "Saving..." : "Save Title"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsRenaming(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

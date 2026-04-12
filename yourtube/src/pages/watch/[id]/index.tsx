@@ -5,11 +5,12 @@ import Videopplayer from "@/components/Videopplayer";
 import axiosInstance from "@/lib/axiosinstance";
 import { notFound } from "next/navigation";
 import { useRouter } from "next/router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 const index = () => {
   const router = useRouter();
   const { id } = router.query;
+  const commentsRef = useRef<HTMLDivElement | null>(null);
   const [videos, setvideo] = useState<any>(null);
   const [video, setvide] = useState<any>(null);
   const [loading, setloading] = useState(true);
@@ -29,6 +30,21 @@ const index = () => {
     };
     fetchvideo();
   }, [id]);
+
+  const handleOpenComments = useCallback(() => {
+    commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleNextVideo = useCallback(() => {
+    if (!Array.isArray(video) || !videos?._id) return;
+    const currentIndex = video.findIndex((item: any) => item._id === videos._id);
+    if (currentIndex === -1 || video.length === 0) return;
+    const nextIndex = (currentIndex + 1) % video.length;
+    const nextVideo = video[nextIndex];
+    if (nextVideo?._id) {
+      router.push(`/watch/${nextVideo._id}`);
+    }
+  }, [video, videos, router]);
   // const relatedVideos = [
   //   {
   //     _id: "1",
@@ -71,9 +87,15 @@ const index = () => {
       <div className="max-w-7xl mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <Videopplayer video={videos} />
+            <Videopplayer
+              video={videos}
+              onNextVideo={handleNextVideo}
+              onOpenComments={handleOpenComments}
+            />
             <VideoInfo video={videos} />
-            <Comments videoId={id} />
+            <div ref={commentsRef}>
+              <Comments videoId={id} />
+            </div>
           </div>
           <div className="space-y-4">
             <RelatedVideos videos={video} />

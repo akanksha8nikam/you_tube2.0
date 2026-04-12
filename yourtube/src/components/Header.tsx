@@ -1,4 +1,4 @@
-import { Bell, Menu, Mic, Search, User, VideoIcon } from "lucide-react";
+import { Bell, Menu, Mic, Search, User, VideoIcon, Upload } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -78,11 +78,20 @@ const Header = () => {
         </Button>
       </form>
       <div className="flex items-center gap-2">
+        <Link href="/video-call">
+          <Button variant="ghost" size="icon" title="Video Call">
+            <VideoIcon className="w-6 h-6" />
+          </Button>
+        </Link>
+        {user && (
+          <Link href="/upload">
+            <Button variant="ghost" size="icon" title="Upload Video">
+              <Upload className="w-6 h-6" />
+            </Button>
+          </Link>
+        )}
         {user ? (
           <>
-            <Button variant="ghost" size="icon">
-              <VideoIcon className="w-6 h-6" />
-            </Button>
             <Button variant="ghost" size="icon">
               <Bell className="w-6 h-6" />
             </Button>
@@ -123,6 +132,12 @@ const Header = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/watch-later">Watch later</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/downloads">Downloads</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/subscriptions">Subscription plans</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>Sign out</DropdownMenuItem>

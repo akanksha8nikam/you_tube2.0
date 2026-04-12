@@ -1,5 +1,10 @@
 import axios from "axios";
-const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
-});
+
+// Use proxy so API calls hit same origin (avoids CORS and env issues)
+const baseURL =
+  typeof window !== "undefined"
+    ? "/api/proxy"
+    : process.env.BACKEND_URL || "http://localhost:5000";
+
+const axiosInstance = axios.create({ baseURL });
 export default axiosInstance;

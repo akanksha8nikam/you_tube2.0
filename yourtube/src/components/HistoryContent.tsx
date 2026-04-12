@@ -77,7 +77,6 @@ export default function HistoryContent() {
       </div>
     );
   }
-  const videos = "/video/vdo.mp4";
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -85,14 +84,25 @@ export default function HistoryContent() {
       </div>
 
       <div className="space-y-4">
-        {history.map((item) => (
+        {history.filter(item => item.videoid).map((item) => (
           <div key={item._id} className="flex gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="flex-shrink-0">
               <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden">
                 <video
-                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${(item.videoid?.filepath || "").replace(/\\/g, "/")}`}
+                  src={`/api/proxy/${(item.videoid?.filepath || "").replace(/\\/g, "/")}`}
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  disablePictureInPicture
+                  controlsList="nodownload noplaybackrate nopictureinpicture"
+                  onContextMenu={(e) => e.preventDefault()}
                 />
+                <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-medium px-1.5 rounded shadow-sm">
+                  {item.videoid?.duration || (() => {
+                    const seed = (item.videoid?._id || "").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+                    const mins = (seed % 10) + 1;
+                    const secs = (seed % 60).toString().padStart(2, '0');
+                    return `${mins}:${secs}`;
+                  })()}
+                </div>
               </div>
             </Link>
 
@@ -106,11 +116,13 @@ export default function HistoryContent() {
                 {item.videoid.videochanel}
               </p>
               <p className="text-sm text-gray-600">
-                {item.videoid.views.toLocaleString()} views •{" "}
-                {formatDistanceToNow(new Date(item.videoid.createdAt))} ago
+                {item.videoid.views?.toLocaleString() ?? 0} views •{" "}
+                {item.videoid.createdAt 
+                  ? formatDistanceToNow(new Date(item.videoid.createdAt))
+                  : "unknown"} ago
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Added {formatDistanceToNow(new Date(item.createdAt))} ago
+                Watched {formatDistanceToNow(new Date(item.createdAt))} ago
               </p>
             </div>
 
