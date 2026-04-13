@@ -47,19 +47,19 @@ export default function VideoCard({ video }: any) {
   };
 
   return (
-    <div className="group relative">
+    <div className="group relative transition-all duration-300 hover:-translate-y-1">
       <Link href={`/watch/${video?._id}`} className="block space-y-3">
-        <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+        <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 shadow-sm group-hover:shadow-lg transition-all duration-300">
           {video?.thumbnail ? (
             <img
               src={video.thumbnail}
               alt={video.videotitle}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
             />
           ) : (
             <video
               src={`/api/proxy/${(video?.filepath || "").replace(/\\/g, "/")}`}
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
               disablePictureInPicture
               controlsList="nodownload noplaybackrate nopictureinpicture"
               onContextMenu={(e) => e.preventDefault()}
@@ -83,16 +83,16 @@ export default function VideoCard({ video }: any) {
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600">
+            <h3 className="font-semibold text-[15px] leading-tight text-slate-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
               {video?.videotitle}
             </h3>
 
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-[13px] text-slate-500 mt-1.5 font-medium hover:text-slate-800 transition-colors">
               {video?.videochanel}
             </p>
 
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-0.5">
+              <p className="text-[13px] text-slate-500">
                 {video?.views?.toLocaleString() ?? 0} views •{" "}
                 {video?.createdAt
                   ? formatDistanceToNow(new Date(video.createdAt), {

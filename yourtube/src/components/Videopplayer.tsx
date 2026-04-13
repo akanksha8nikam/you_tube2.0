@@ -354,6 +354,12 @@ export default function VideoPlayer({
   const handleZoneTap = (zone: "left" | "center" | "right") => {
     const zoneState = tapStateRef.current[zone];
     zoneState.count += 1;
+
+    // Fix: Execute play/pause instantly to bypass mobile Safari/Chrome strict autoplay policy
+    if (zone === "center" && zoneState.count === 1) {
+      togglePlay();
+    }
+
     if (zoneState.timer) {
       clearTimeout(zoneState.timer);
     }
@@ -362,8 +368,16 @@ export default function VideoPlayer({
       zoneState.count = 0;
       zoneState.timer = null;
       if (zone === "left") runLeftAction(count);
-      if (zone === "center") runCenterAction(count);
       if (zone === "right") runRightAction(count);
+      if (zone === "center" && count >= 3) {
+        if (onNextVideo) {
+          onNextVideo();
+          setGestureText("⏭ Next video");
+        } else {
+          setGestureText("No next video available.");
+        }
+        setTimeout(() => setGestureText(""), 900);
+      }
     }, 500);
   };
 

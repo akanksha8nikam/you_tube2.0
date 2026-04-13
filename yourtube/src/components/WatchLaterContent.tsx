@@ -89,10 +89,10 @@ export default function WatchLaterContent() {
         {watchLater.filter(item => item.videoid).map((item) => (
           <div key={item._id} className="flex flex-col sm:flex-row gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="w-full sm:w-auto flex-shrink-0">
-              <div className="relative w-full sm:w-40 md:w-56 aspect-video bg-gray-100 rounded overflow-hidden">
+              <div className="relative w-full sm:w-40 md:w-56 aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-all duration-300">
                 <video
                   src={`/api/proxy/${(item.videoid?.filepath || "").replace(/\\/g, "/")}`}
-                  className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
                   disablePictureInPicture
                   controlsList="nodownload noplaybackrate nopictureinpicture"
                   onContextMenu={(e) => e.preventDefault()}
