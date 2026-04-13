@@ -24,7 +24,7 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
         >
           <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden flex-shrink-0">
             <video
-              src={`/api/proxy/${(video?.filepath || "").replace(/\\/g, "/")}`}
+              src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${(video?.filepath || "").replace(/\\/g, "/")}`}
               className="object-cover group-hover:scale-105 transition-transform duration-200"
               disablePictureInPicture
               controlsList="nodownload noplaybackrate nopictureinpicture"
