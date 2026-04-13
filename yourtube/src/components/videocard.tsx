@@ -58,7 +58,7 @@ export default function VideoCard({ video }: any) {
             />
           ) : (
             <video
-              src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${(video?.filepath || "").replace(/\\/g, "/")}`}
+              src={`/api/proxy/${(video?.filepath || "").replace(/\\/g, "/")}`}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
               disablePictureInPicture
               controlsList="nodownload noplaybackrate nopictureinpicture"
