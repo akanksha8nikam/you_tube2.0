@@ -35,17 +35,20 @@ export const getUserSubscription = async (req, res) => {
         const user = await users.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Lazy reset: Check if the last reset was on a previous day
+        // Lazy reset: Check if the last reset was on a previous day (IST Timezone)
         const now = new Date();
         const lastReset = new Date(user.lastWatchTimeReset || Date.now());
         
-        const isDifferentDay = 
-            now.getFullYear() !== lastReset.getFullYear() ||
-            now.getMonth() !== lastReset.getMonth() ||
-            now.getDate() !== lastReset.getDate();
+        // Convert both to IST strings for comparison
+        const getISTDateString = (date) => 
+            new Date(date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
+
+        const isDifferentDay = getISTDateString(now) !== getISTDateString(lastReset);
 
         if (isDifferentDay) {
+            console.log(`[Subscription Reset] Resetting user ${user.email} to FREE plan and 0 mins (IST Midnight)`);
             user.consumedWatchTime = 0;
+            user.subscriptionPlan = "FREE"; // Revert plan to FREE daily as requested
             user.lastWatchTimeReset = now;
             await user.save();
         }
