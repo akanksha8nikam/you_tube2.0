@@ -158,6 +158,10 @@ export default function VideoPlayer({
 
   useEffect(() => {
     const player = videoRef.current;
+    console.log("DIAGNOSTIC: Backend URL is:", backendUrl);
+    console.log("DIAGNOSTIC: Filepath is:", video?.filepath);
+    console.log("DIAGNOSTIC: Final Video URL is:", videoUrl);
+
     if (player && videoUrl && isSubscriptionLoaded) {
       player.load();
       
