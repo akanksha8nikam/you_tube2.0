@@ -20,10 +20,28 @@ const server = http.createServer(app);
 import path from "path";
 import { uploadsDir } from "./filehelper/filehelper.js";
 import { sendmail } from "./mails/mails.js";
-app.use(cors());
+const resolvedUploadsDir = path.resolve(process.cwd(), uploadsDir);
+
+// Robust CORS for production media streaming
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Range"],
+  exposedHeaders: ["Content-Range", "Content-Length", "Accept-Ranges"],
+  credentials: true
+}));
+
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
-app.use("/uploads", express.static(path.join(uploadsDir)));
+
+// Serve static files with explicit headers for video streaming
+app.use("/uploads", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Range");
+  res.header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  next();
+}, express.static(resolvedUploadsDir));
 app.use("/subscription", subscriptionroutes);
 app.get("/", (req, res) => {
   res.send("You tube backend is working");

@@ -97,9 +97,6 @@ const VideoUploader = ({ channelId, channelName }: any) => {
       setUploadProgress(0);
       const baseUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "");
       const uploadUrl = `${baseUrl}/video/upload`;
-      console.log("DIAGNOSTIC: Backend URL configured as:", process.env.NEXT_PUBLIC_BACKEND_URL);
-      console.log("DIAGNOSTIC: Sanitized Base URL:", baseUrl);
-      console.log("DIAGNOSTIC: Final Upload URL:", uploadUrl);
       const res = await axios.post(uploadUrl, formdata, {
         onUploadProgress: (progresEvent: any) => {
           const progress = Math.round(
