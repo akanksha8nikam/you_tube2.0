@@ -38,19 +38,31 @@ export const getUserSubscription = async (req, res) => {
         // Lazy reset: Check if the last reset was on a previous day (IST Timezone)
         const now = new Date();
         const lastReset = new Date(user.lastWatchTimeReset || Date.now());
-        
-        // Convert both to IST strings for comparison
-        const getISTDateString = (date) => 
-            new Date(date).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
 
-        const isDifferentDay = getISTDateString(now) !== getISTDateString(lastReset);
+        // Robust IST Day Calculator (+5:30 offset)
+        const getISTDayIdentifier = (date) => {
+            const d = new Date(date);
+            // shift UTC to IST manually
+            const istTime = d.getTime() + (5.5 * 60 * 60 * 1000);
+            const istDate = new Date(istTime);
+            return `${istDate.getUTCFullYear()}-${istDate.getUTCMonth()}-${istDate.getUTCDate()}`;
+        };
+
+        const todayIST = getISTDayIdentifier(now);
+        const lastResetIST = getISTDayIdentifier(lastReset);
+        const isDifferentDay = todayIST !== lastResetIST;
+
+        console.log(`[Subscription Debug] User: ${user.email}`);
+        console.log(`[Subscription Debug] Today (IST): ${todayIST}, Last Reset (IST): ${lastResetIST}`);
+        console.log(`[Subscription Debug] Is Different Day: ${isDifferentDay}`);
 
         if (isDifferentDay) {
-            console.log(`[Subscription Reset] Resetting user ${user.email} to FREE plan and 0 mins (IST Midnight)`);
+            console.log(`[Subscription Action] Triggering Reset to FREE for ${user.email}`);
             user.consumedWatchTime = 0;
-            user.subscriptionPlan = "FREE"; // Revert plan to FREE daily as requested
+            user.subscriptionPlan = "FREE"; 
             user.lastWatchTimeReset = now;
             await user.save();
+            console.log(`[Subscription Action] Reset successful for ${user.email}`);
         }
 
         const rawPlanKey = user.subscriptionPlan || "FREE";
