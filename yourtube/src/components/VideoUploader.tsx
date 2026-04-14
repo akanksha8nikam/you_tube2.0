@@ -95,7 +95,8 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     try {
       setIsUploading(true);
       setUploadProgress(0);
-      const uploadUrl = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/video/upload` : "http://localhost:5000/video/upload";
+      const baseUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+      const uploadUrl = `${baseUrl}/video/upload`;
       const res = await axios.post(uploadUrl, formdata, {
         onUploadProgress: (progresEvent: any) => {
           const progress = Math.round(

@@ -137,7 +137,7 @@ const SearchResult = ({ query }: any) => {
                     />
                   ) : (
                     <video
-                      src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${(video?.filepath || "").replace(/\\/g, "/")}`}
+                      src={`${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`}
                       className="object-cover group-hover:scale-105 transition-transform duration-200"
                       disablePictureInPicture
                       controlsList="nodownload noplaybackrate nopictureinpicture"

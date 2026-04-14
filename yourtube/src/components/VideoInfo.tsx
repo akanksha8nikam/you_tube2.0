@@ -204,7 +204,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
 
     try {
       setDownloadLabel("Downloading...");
-      const videoUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${(video?.filepath || "").replace(/\\/g, "/")}`;
+      const videoUrl = `${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`;
       const response = await fetch(videoUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

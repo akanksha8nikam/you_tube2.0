@@ -53,8 +53,8 @@ export default function VideoPlayer({
   const [consumedWatchTime, setConsumedWatchTime] = useState(0); 
   const [limitMessage, setLimitMessage] = useState("");
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-  const videoUrl = `${backendUrl}/${(video?.filepath || "").replace(/\\/g, "/")}`;
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "");
+  const videoUrl = `${backendUrl}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`;
   
   // Calculate how many seconds are left in the daily quota
   const globalRemainingSeconds = 
