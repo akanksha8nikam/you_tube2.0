@@ -17,10 +17,18 @@ import downloadroutes from "./routes/download.js";
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
+import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { uploadsDir } from "./filehelper/filehelper.js";
-import { sendmail } from "./mails/mails.js";
+
+// Ensure uploads directory exists for production
 const resolvedUploadsDir = path.resolve(process.cwd(), uploadsDir);
+if (!fs.existsSync(resolvedUploadsDir)) {
+  fs.mkdirSync(resolvedUploadsDir, { recursive: true });
+  console.log("Created uploads directory at:", resolvedUploadsDir);
+}
+import { sendmail } from "./mails/mails.js";
 
 // Robust CORS for production media streaming
 app.use(cors({

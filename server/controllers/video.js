@@ -4,11 +4,13 @@ import mongoose from "mongoose";
 
 export const uploadvideo = async (req, res) => {
   if (req.file === undefined) {
+    console.warn("Upload blocked: Request file is undefined. MIME type check might have failed.");
     return res
       .status(404)
       .json({ message: "plz upload a mp4 video file only" });
   } else {
     try {
+      console.log("Saving video metadata for file:", req.file.filename);
       const file = new video({
         videotitle: req.body.videotitle,
         filename: req.file.originalname,
@@ -21,9 +23,10 @@ export const uploadvideo = async (req, res) => {
         duration: req.body.duration,
       });
       await file.save();
+      console.log("Successfully saved video metadata to DB");
       return res.status(201).json("file uploaded successfully");
     } catch (error) {
-      console.error(" error:", error);
+      console.error("FATAL ERROR: Failed to save video to DB:", error);
       return res.status(500).json({ message: error.message || "Something went wrong" });
     }
   }

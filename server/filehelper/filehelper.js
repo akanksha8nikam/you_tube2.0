@@ -1,11 +1,15 @@
 "use strict";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 export const uploadsDir = "uploads";
 
 const storage = multer.diskStorage({
   destination: (req, res, cb) => {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
