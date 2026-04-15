@@ -189,7 +189,8 @@ export const changeSubscription = async (req, res) => {
         );
 
         if (updatedUser?.email) {
-            await sendSubscriptionInvoiceEmail({
+            // Attempt to send email, but don't block the response OR fail the transaction if it fails
+            sendSubscriptionInvoiceEmail({
                 to: updatedUser.email,
                 username: updatedUser.name || "User",
                 planName: selectedPlan.name,
@@ -197,6 +198,8 @@ export const changeSubscription = async (req, res) => {
                 watchLimit,
                 invoiceId,
                 paymentDate,
+            }).catch(err => {
+                console.error("[Email Error] Failed to send subscription invoice:", err.message);
             });
         }
 
