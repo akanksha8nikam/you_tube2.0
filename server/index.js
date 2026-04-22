@@ -57,6 +57,25 @@ app.get("/", (req, res) => {
   res.send("You tube backend is working");
 });
 
+app.get("/api/health", async (req, res) => {
+  const status = {
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    db: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected",
+    cloudinary: "Checking...",
+  };
+
+  try {
+    const { default: cloudinaryInstance } = await import("./config/cloudinary.js");
+    await cloudinaryInstance.api.ping();
+    status.cloudinary = "Connected";
+    res.status(200).json(status);
+  } catch (err) {
+    status.cloudinary = `Error: ${err.message}`;
+    res.status(500).json(status);
+  }
+});
+
 app.post("/api/send-mail", async (req, res) => {
   try {
     const { to, subject, text } = req.body;

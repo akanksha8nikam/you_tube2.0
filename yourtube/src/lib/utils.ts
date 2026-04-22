@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getVideoUrl(filepath: string) {
-  if (!filepath) return "";
+  if (!filepath) return "https://placehold.co/600x400?text=No+Media+Path";
   
   // 1. If it's already a full URL (Cloudinary) or Base64, return as is
   if (filepath.startsWith("http") || filepath.startsWith("data:")) {
@@ -19,7 +19,10 @@ export function getVideoUrl(filepath: string) {
   // 3. Clean the filepath (remove leading slashes and fix windows backslashes)
   const cleanPath = filepath.replace(/\\/g, "/").replace(/^\/+/, "");
 
-  // 4. If the path already includes "uploads/", don't double it if we are manually adding it
-  // But usually, the DB stores "uploads/filename", so we just append.
+  // 4. Debug logging (only visible in dev console during development)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log(`[Media] Resolving: ${filepath} -> ${backendUrl}/${cleanPath}`);
+  }
+
   return `${backendUrl}/${cleanPath}`;
 }
