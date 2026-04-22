@@ -17,6 +17,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { getVideoUrl } from "@/lib/utils";
 const SearchResult = ({ query }: any) => {
   const { user } = useUser();
   const [isRenaming, setIsRenaming] = useState(false);
@@ -131,13 +132,13 @@ const SearchResult = ({ query }: any) => {
                 <div className="relative w-80 aspect-video bg-gray-100 rounded-lg overflow-hidden">
                   {video.thumbnail ? (
                     <img
-                      src={video.thumbnail}
+                      src={getVideoUrl(video.thumbnail)}
                       alt={video.videotitle}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />
                   ) : (
                     <video
-                      src={`${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`}
+                      src={getVideoUrl(video?.filepath || "")}
                       className="object-cover group-hover:scale-105 transition-transform duration-200"
                       disablePictureInPicture
                       controlsList="nodownload noplaybackrate nopictureinpicture"

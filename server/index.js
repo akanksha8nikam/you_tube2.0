@@ -20,10 +20,11 @@ const server = http.createServer(app);
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import { uploadsDir } from "./filehelper/filehelper.js";
 
 // Ensure uploads directory exists for production
-const resolvedUploadsDir = path.resolve(process.cwd(), uploadsDir);
+const resolvedUploadsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), uploadsDir);
 if (!fs.existsSync(resolvedUploadsDir)) {
   fs.mkdirSync(resolvedUploadsDir, { recursive: true });
   console.log("Created uploads directory at:", resolvedUploadsDir);
@@ -44,6 +45,7 @@ app.use(express.urlencoded({ limit: "30mb", extended: true }));
 
 // Serve static files with explicit headers for video streaming
 app.use("/uploads", (req, res, next) => {
+  console.log(`[Static] Request for: ${req.url}`);
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Range");
@@ -215,3 +217,15 @@ mongoose
   .catch((error) => {
     console.log(error);
   });
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("!!! GLOBAL SERVER ERROR !!!");
+  console.error("Message:", err.message);
+  console.error("Stack:", err.stack);
+  res.status(500).json({ 
+    message: "Internal Server Error", 
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});

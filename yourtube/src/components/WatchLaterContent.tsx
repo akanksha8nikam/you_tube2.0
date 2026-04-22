@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import axiosInstance from "@/lib/axiosinstance";
 import { useUser } from "@/lib/AuthContext";
+import { getVideoUrl } from "@/lib/utils";
 
 export default function WatchLaterContent() {
   const [watchLater, setWatchLater] = useState<any[]>([]);
@@ -90,13 +91,21 @@ export default function WatchLaterContent() {
           <div key={item._id} className="flex flex-col sm:flex-row gap-4 group">
             <Link href={`/watch/${item.videoid._id}`} className="w-full sm:w-auto flex-shrink-0">
               <div className="relative w-full sm:w-40 md:w-56 aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm group-hover:shadow-md transition-all duration-300">
-                <video
-                  src={`${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(item.videoid?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
-                  disablePictureInPicture
-                  controlsList="nodownload noplaybackrate nopictureinpicture"
-                  onContextMenu={(e) => e.preventDefault()}
-                />
+                {item.videoid?.thumbnail ? (
+                  <img
+                    src={getVideoUrl(item.videoid.thumbnail)}
+                    alt={item.videoid.videotitle}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
+                  />
+                ) : (
+                  <video
+                    src={getVideoUrl(item.videoid?.filepath || "")}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
+                    disablePictureInPicture
+                    controlsList="nodownload noplaybackrate nopictureinpicture"
+                    onContextMenu={(e) => e.preventDefault()}
+                  />
+                )}
                 <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-medium px-1.5 rounded shadow-sm">
                   {item.videoid?.duration || (() => {
                     const seed = (item.videoid?._id || "").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);

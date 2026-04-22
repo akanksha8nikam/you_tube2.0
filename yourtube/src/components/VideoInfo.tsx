@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
 import { useRouter } from "next/router";
+import { getVideoUrl } from "@/lib/utils";
 
 interface Video {
   _id: string;
@@ -204,7 +205,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
 
     try {
       setDownloadLabel("Downloading...");
-      const videoUrl = `${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`;
+      const videoUrl = getVideoUrl(video?.filepath || "");
       const response = await fetch(videoUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

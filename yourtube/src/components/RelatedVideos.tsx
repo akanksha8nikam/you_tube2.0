@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import { getVideoUrl } from "@/lib/utils";
 
 interface RelatedVideosProps {
   videos: Array<{
@@ -23,13 +23,21 @@ export default function RelatedVideos({ videos }: RelatedVideosProps) {
           className="flex gap-2 group"
         >
           <div className="relative w-40 aspect-video bg-gray-100 rounded overflow-hidden flex-shrink-0">
-            <video
-              src={`${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`}
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
-              disablePictureInPicture
-              controlsList="nodownload noplaybackrate nopictureinpicture"
-              onContextMenu={(e) => e.preventDefault()}
-            />
+            {video.thumbnail ? (
+              <img
+                src={getVideoUrl(video.thumbnail)}
+                alt={video.videotitle}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              />
+            ) : (
+              <video
+                src={getVideoUrl(video?.filepath || "")}
+                className="object-cover group-hover:scale-105 transition-transform duration-200"
+                disablePictureInPicture
+                controlsList="nodownload noplaybackrate nopictureinpicture"
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            )}
             <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-medium px-1.5 rounded shadow-sm">
               {video?.duration || (() => {
                 const seed = (video?._id || "").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);

@@ -17,6 +17,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { getVideoUrl } from "@/lib/utils";
 
 const videos = "/video/vdo.mp4";
 export default function VideoCard({ video }: any) {
@@ -52,13 +53,13 @@ export default function VideoCard({ video }: any) {
         <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 shadow-sm group-hover:shadow-lg transition-all duration-300">
           {video?.thumbnail ? (
             <img
-              src={video.thumbnail}
+              src={getVideoUrl(video.thumbnail)}
               alt={video.videotitle}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
             />
           ) : (
             <video
-              src={`${(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000").replace(/\/+$/, "")}/${(video?.filepath || "").replace(/\\/g, "/").replace(/^\/+/, "")}`}
+              src={getVideoUrl(video?.filepath || "")}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out pointer-events-none"
               disablePictureInPicture
               controlsList="nodownload noplaybackrate nopictureinpicture"

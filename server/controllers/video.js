@@ -10,11 +10,25 @@ export const uploadvideo = async (req, res) => {
       .json({ message: "plz upload a mp4 video file only" });
   } else {
     try {
-      console.log("Saving video metadata for file:", req.file.filename);
+      console.log("--- UPLOAD DEBUG START ---");
+      console.log("File detected:", req.file ? "YES" : "NO");
+      if (req.file) {
+        console.log("Path:", req.file.path);
+        console.log("Type:", req.file.mimetype);
+        console.log("Size:", req.file.size);
+      }
+      console.log("Body metadata:", {
+        videotitle: req.body.videotitle,
+        videochanel: req.body.videochanel,
+        uploader: req.body.uploader,
+        hasThumbnail: !!req.body.thumbnail,
+        duration: req.body.duration
+      });
+
       const file = new video({
         videotitle: req.body.videotitle,
         filename: req.file.originalname,
-        filepath: req.file.path.replace(/\\/g, "/"),
+        filepath: req.file.path, // Cloudinary URL
         filetype: req.file.mimetype,
         filesize: String(req.file.size),
         videochanel: req.body.videochanel,
@@ -22,11 +36,16 @@ export const uploadvideo = async (req, res) => {
         thumbnail: req.body.thumbnail,
         duration: req.body.duration,
       });
+
+      console.log("Attempting to save to MongoDB...");
       await file.save();
       console.log("Successfully saved video metadata to DB");
+      console.log("--- UPLOAD DEBUG END ---");
       return res.status(201).json("file uploaded successfully");
     } catch (error) {
-      console.error("FATAL ERROR: Failed to save video to DB:", error);
+      console.error("!!! UPLOAD FATAL ERROR !!!");
+      console.error("Error Message:", error.message);
+      console.error("Stack Trace:", error.stack);
       return res.status(500).json({ message: error.message || "Something went wrong" });
     }
   }
