@@ -38,7 +38,7 @@ const Header = () => {
     }
   };
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-2 sm:px-4 py-2 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm transition-all">
+    <header className="sticky top-0 z-50 flex items-center justify-between px-2 sm:px-4 py-2 bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm transition-all duration-500">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon">
           <Menu className="w-6 h-6" />
@@ -49,8 +49,8 @@ const Header = () => {
               <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
             </svg>
           </div>
-          <span className="text-xl font-medium hidden sm:inline-block">YourTube</span>
-          <span className="text-xs text-gray-400 ml-1">IN</span>
+          <span className="text-xl font-medium hidden sm:inline-block text-foreground">YourTube</span>
+          <span className="text-xs text-muted-foreground ml-1">IN</span>
         </Link>
       </div>
       <form
@@ -68,7 +68,7 @@ const Header = () => {
           />
           <Button
             type="submit"
-            className="rounded-r-full px-6 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-l-0"
+            className="rounded-r-full px-6 bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-l-0 border-border"
           >
             <Search className="w-5 h-5" />
           </Button>

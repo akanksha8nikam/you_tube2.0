@@ -64,15 +64,18 @@ const Comments = ({ videoId }: any) => {
     if (!user || !newComment.trim()) return;
 
     setIsSubmitting(true);
-    let finalCity = "Unknown";
-    try {
-      const geoRes = await fetch("https://ipapi.co/json/");
-      if (geoRes.ok) {
-        const geo = await geoRes.json();
-        if (geo?.city) finalCity = geo.city;
+    
+    // Only fetch if city is not already set by detectCity
+    if (!city) {
+      try {
+        const geoRes = await fetch("https://ipapi.co/json/");
+        if (geoRes.ok) {
+          const geo = await geoRes.json();
+          if (geo?.city) setCity(geo.city);
+        }
+      } catch (error) {
+        // Fallback silently
       }
-    } catch (error) {
-      // Fallback silently
     }
 
     try {
@@ -81,7 +84,7 @@ const Comments = ({ videoId }: any) => {
         userid: user._id,
         commentbody: newComment,
         usercommented: user.name,
-        city: finalCity || "Unknown",
+        city: city || "Unknown",
       });
       if (res.data.comment) {
         const newCommentObj: Comment = res.data.data;
@@ -242,8 +245,16 @@ const Comments = ({ videoId }: any) => {
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e: any) => setNewComment(e.target.value)}
-              className="min-h-[80px] resize-none border-0 border-b-2 rounded-none focus-visible:ring-0 mb-3"
+              onFocus={() => { if(!city) detectCity(); }}
+              className="min-h-[80px] resize-none border-0 border-b-2 bg-transparent text-foreground rounded-none focus-visible:ring-0 mb-3"
             />
+            {city && (
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <span>📍 Posting from:</span>
+                <span className="font-semibold text-foreground">{city}</span>
+                <button onClick={() => setCity("")} className="ml-1 hover:text-red-500">✕</button>
+              </div>
+            )}
             <div className="flex gap-2 justify-end">
               <Button
                 variant="ghost"
@@ -265,7 +276,7 @@ const Comments = ({ videoId }: any) => {
       )}
       <div className="space-y-4">
         {comments.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">
+          <p className="text-sm text-muted-foreground italic">
             No comments yet. Be the first to comment!
           </p>
         ) : (
@@ -277,10 +288,10 @@ const Comments = ({ videoId }: any) => {
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">
+                  <span className="font-medium text-sm text-foreground">
                     {comment.usercommented} • {comment.city || "Unknown"}
                   </span>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(comment.commentedon))} ago
                   </span>
                 </div>
@@ -325,7 +336,7 @@ const Comments = ({ videoId }: any) => {
                         size="sm"
                         disabled={!user?._id}
                         onClick={() => handleReaction(comment._id, "like")}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-none transition-colors shadow-sm"
+                        className="bg-muted hover:bg-muted/80 text-foreground border-none transition-colors shadow-sm"
                       >
                         👍 {comment.likesCount || comment.likes?.length || 0}
                       </Button>
@@ -335,17 +346,17 @@ const Comments = ({ videoId }: any) => {
                         size="sm"
                         disabled={!user?._id}
                         onClick={() => handleReaction(comment._id, "dislike")}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-none transition-colors shadow-sm"
+                        className="bg-muted hover:bg-muted/80 text-foreground border-none transition-colors shadow-sm"
                       >
                         👎 {comment.dislikesCount || comment.dislikes?.length || 0}
                       </Button>
                       <select
-                        className="border rounded px-2 py-1 text-xs"
+                        className="bg-muted border border-border rounded-lg px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer hover:bg-muted/80 shadow-sm"
                         value={selectedLanguage}
                         onChange={(e) => setSelectedLanguage(e.target.value)}
                       >
                         {languageOptions.map((l) => (
-                          <option key={l.value} value={l.value}>
+                          <option key={l.value} value={l.value} className="bg-background text-foreground">
                             {l.label}
                           </option>
                         ))}
@@ -361,11 +372,11 @@ const Comments = ({ videoId }: any) => {
                       </Button>
                     </div>
                     {comment.userid === user?._id && (
-                      <div className="flex gap-2 mt-2 text-sm text-gray-500">
-                        <button onClick={() => handleEdit(comment)}>
+                      <div className="flex gap-2 mt-2 text-sm text-muted-foreground">
+                        <button onClick={() => handleEdit(comment)} className="hover:text-foreground">
                           Edit
                         </button>
-                        <button onClick={() => handleDelete(comment._id)}>
+                        <button onClick={() => handleDelete(comment._id)} className="hover:text-foreground">
                           Delete
                         </button>
                       </div>

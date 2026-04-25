@@ -53,12 +53,12 @@ const ChannelHeader = ({ channel, user }: any) => {
           <div className="flex-1 space-y-2">
             {isEditing ? (
               <div className="space-y-4 max-w-xl">
-                <div>
-                   <label className="text-xs font-semibold text-gray-500 uppercase">Channel Name</label>
+                 <div>
+                   <label className="text-xs font-semibold text-muted-foreground uppercase">Channel Name</label>
                    <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1" />
                 </div>
                 <div>
-                   <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
+                   <label className="text-xs font-semibold text-muted-foreground uppercase">Description</label>
                    <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} className="mt-1" />
                 </div>
                 <div className="flex gap-2">
@@ -72,12 +72,12 @@ const ChannelHeader = ({ channel, user }: any) => {
               </div>
             ) : (
               <>
-                <h1 className="text-2xl md:text-4xl font-bold">{channel?.channelname}</h1>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                <h1 className="text-2xl md:text-4xl font-bold text-foreground">{channel?.channelname}</h1>
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <span>@{channel?.channelname.toLowerCase().replace(/\s+/g, "")}</span>
                 </div>
                 {channel?.description && (
-                  <p className="text-sm text-gray-700 max-w-2xl">
+                  <p className="text-sm text-muted-foreground max-w-2xl">
                     {channel?.description}
                   </p>
                 )}
@@ -86,7 +86,7 @@ const ChannelHeader = ({ channel, user }: any) => {
           </div>
 
           {user && user?._id === channel?._id && !isEditing && (
-             <Button onClick={() => setIsEditing(true)} className="bg-blue-900 hover:bg-blue-950 text-white">
+             <Button onClick={() => setIsEditing(true)} variant="secondary" className="w-auto">
                <Edit2 className="w-4 h-4 mr-2" /> Edit Channel
              </Button>
           )}
@@ -97,7 +97,7 @@ const ChannelHeader = ({ channel, user }: any) => {
                 onClick={() => setIsSubscribed(!isSubscribed)}
                 variant={isSubscribed ? "outline" : "default"}
                 className={
-                  isSubscribed ? "bg-gray-100" : "bg-red-600 hover:bg-red-700"
+                  isSubscribed ? "bg-muted" : "bg-red-600 hover:bg-red-700"
                 }
               >
                 {isSubscribed ? "Subscribed" : "Subscribe"}

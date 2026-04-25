@@ -26,6 +26,7 @@ interface Video {
   Like: number;
   Dislike: number;
   createdAt: string;
+  description?: string;
 }
 
 const VideoInfo = ({ video }: { video: Video }) => {
@@ -244,7 +245,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-gray-100 rounded-full">
+          <div className="flex items-center bg-muted/60 rounded-full">
             <Button
               variant="ghost"
               size="sm"
@@ -253,13 +254,13 @@ const VideoInfo = ({ video }: { video: Video }) => {
             >
               <ThumbsUp
                 className={`w-5 h-5 mr-2 ${
-                  isLiked ? "fill-black text-black" : ""
+                  isLiked ? "fill-foreground text-foreground" : ""
                 }`}
               />
               {likes.toLocaleString()}
             </Button>
 
-            <div className="w-px h-6 bg-gray-300" />
+            <div className="w-px h-6 bg-border" />
 
             <Button
               variant="ghost"
@@ -269,7 +270,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
             >
               <ThumbsDown
                 className={`w-5 h-5 mr-2 ${
-                  isDisliked ? "fill-black text-black" : ""
+                  isDisliked ? "fill-foreground text-foreground" : ""
                 }`}
               />
               {dislikes.toLocaleString()}
@@ -279,7 +280,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`bg-gray-100 rounded-full ${
+            className={`bg-muted/60 rounded-full ${
               isWatchLater ? "text-primary" : ""
             }`}
             onClick={handleWatchLater}
@@ -288,7 +289,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
             {isWatchLater ? "Saved" : "Watch Later"}
           </Button>
 
-          <Button variant="ghost" size="sm" className="bg-gray-100 rounded-full">
+          <Button variant="ghost" size="sm" className="bg-muted/60 rounded-full">
             <Share className="w-5 h-5 mr-2" />
             Share
           </Button>
@@ -296,25 +297,25 @@ const VideoInfo = ({ video }: { video: Video }) => {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-gray-100 rounded-full"
+            className="bg-muted/60 rounded-full"
             onClick={handleDownload}
           >
             <Download className="w-5 h-5 mr-2" />
             {downloadLabel}
           </Button>
 
-          <Button variant="ghost" size="icon" className="bg-gray-100 rounded-full">
+          <Button variant="ghost" size="icon" className="bg-muted/60 rounded-full">
             <MoreHorizontal className="w-5 h-5" />
           </Button>
         </div>
       </div>
       {downloadUsageText && (
-        <p className="text-xs text-gray-600">{downloadUsageText}</p>
+        <p className="text-xs text-muted-foreground">{downloadUsageText}</p>
       )}
 
       {/* Description */}
-      <div className="bg-gray-100 rounded-lg p-4">
-        <div className="flex gap-4 text-sm font-medium mb-2">
+      <div className="bg-muted/40 rounded-lg p-4 border border-border">
+        <div className="flex gap-4 text-sm font-medium mb-2 text-foreground">
           <span>{video?.views?.toLocaleString()} views</span>
           <span>
             {video?.createdAt
@@ -323,10 +324,11 @@ const VideoInfo = ({ video }: { video: Video }) => {
           </span>
         </div>
 
-        <div className={`text-sm ${showFullDescription ? "" : "line-clamp-3"}`}>
-          <p>
-            Sample video description. This would contain the actual video
-            description from the database.
+        <div className={`text-sm text-muted-foreground ${showFullDescription ? "" : "line-clamp-3"}`}>
+          <p className="whitespace-pre-wrap">
+            {video?.description && video.description.trim() !== "" 
+              ? video.description 
+              : "No description provided."}
           </p>
         </div>
 

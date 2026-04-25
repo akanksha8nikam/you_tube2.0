@@ -16,6 +16,8 @@ import {
   DialogFooter,
 } from "./ui/dialog";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { getVideoUrl } from "@/lib/utils";
 
@@ -24,6 +26,7 @@ export default function VideoCard({ video }: any) {
   const { user } = useUser();
   const [isRenaming, setIsRenaming] = useState(false);
   const [newTitle, setNewTitle] = useState(video?.videotitle || "");
+  const [newDescription, setNewDescription] = useState(video?.description || "");
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleRename = async () => {
@@ -35,13 +38,14 @@ export default function VideoCard({ video }: any) {
     try {
       await axiosInstance.patch(`/video/update/${video._id}`, {
         videotitle: newTitle,
+        description: newDescription,
         uploader: user._id,
       });
-      toast.success("Video title updated");
+      toast.success("Video updated successfully");
       setIsRenaming(false);
       window.location.reload();
     } catch (err) {
-      toast.error("Failed to rename video");
+      toast.error("Failed to update video");
     } finally {
       setIsUpdating(false);
     }
@@ -50,7 +54,7 @@ export default function VideoCard({ video }: any) {
   return (
     <div className="group relative transition-all duration-300 hover:-translate-y-1">
       <Link href={`/watch/${video?._id}`} className="block space-y-3">
-        <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 shadow-sm group-hover:shadow-lg transition-all duration-300">
+        <div className="relative aspect-video rounded-xl overflow-hidden bg-muted shadow-sm group-hover:shadow-lg transition-all duration-300">
           {video?.thumbnail ? (
             <img
               src={getVideoUrl(video.thumbnail)}
@@ -84,16 +88,16 @@ export default function VideoCard({ video }: any) {
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-[15px] leading-tight text-slate-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+            <h3 className="font-semibold text-[15px] leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors">
               {video?.videotitle}
             </h3>
 
-            <p className="text-[13px] text-slate-500 mt-1.5 font-medium hover:text-slate-800 transition-colors">
+            <p className="text-[13px] text-muted-foreground mt-1.5 font-medium hover:text-foreground transition-colors">
               {video?.videochanel}
             </p>
 
             <div className="flex items-center justify-between mt-0.5">
-              <p className="text-[13px] text-slate-500">
+              <p className="text-[13px] text-muted-foreground">
                 {video?.views?.toLocaleString() ?? 0} views •{" "}
                 {video?.createdAt
                   ? formatDistanceToNow(new Date(video.createdAt), {
@@ -110,7 +114,7 @@ export default function VideoCard({ video }: any) {
                       e.stopPropagation();
                       setIsRenaming(true);
                     }}
-                    className="p-1.5 text-gray-400 hover:text-blue-900 hover:bg-blue-50 rounded transition-all"
+                    className="p-1.5 text-muted-foreground hover:text-primary hover:bg-accent rounded transition-all"
                     title="Rename Video"
                   >
                     <Pencil className="w-4 h-4" />
@@ -131,7 +135,7 @@ export default function VideoCard({ video }: any) {
                         }
                       }
                     }}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all"
                     title="Delete Video"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -148,13 +152,27 @@ export default function VideoCard({ video }: any) {
           <DialogHeader>
             <DialogTitle>Rename Video</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <Input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Enter new title"
-              className="w-full"
-            />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Enter new title"
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Add a description"
+                className="w-full min-h-[100px]"
+              />
+            </div>
           </div>
           <DialogFooter className="flex gap-2">
             <Button
@@ -162,7 +180,7 @@ export default function VideoCard({ video }: any) {
               disabled={isUpdating}
               className="bg-blue-900 hover:bg-blue-950 text-white flex-1"
             >
-              {isUpdating ? "Saving..." : "Save Title"}
+              {isUpdating ? "Saving..." : "Save Changes"}
             </Button>
             <Button
               variant="outline"

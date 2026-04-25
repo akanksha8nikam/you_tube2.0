@@ -207,3 +207,46 @@ function generateSubscriptionEmail({
   </html>
   `;
 }
+
+export async function sendOTPMail(to, otp) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000,
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to,
+    subject: "Your Verification Code - YourTube",
+    html: '<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px;">' +
+          '<h2 style="color: #ff0000; text-align: center;">Verification Code</h2>' +
+          '<p>Hello,</p>' +
+          '<p>Your security is important to us. Please use the following One-Time Password (OTP) to complete your login. This code is valid for 5 minutes.</p>' +
+          '<div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0;">' +
+          otp +
+          '</div>' +
+          '<p>If you did not request this code, please ignore this email.</p>' +
+          '<p>Happy Watching,<br/>The YourTube Team</p>' +
+          '</div>',
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+export async function sendOTPSMS(phoneNumber, otp) {
+  // SMS API Integration (Twilio/Firebase) would go here.
+  // For now, we simulate the delivery by logging it to the server console.
+  console.log("------------------------------------------");
+  console.log("[SMS SIMULATION] Sending OTP " + otp + " to " + phoneNumber);
+  console.log("------------------------------------------");
+  return Promise.resolve(true);
+}

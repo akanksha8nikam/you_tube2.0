@@ -88,11 +88,12 @@ export default function VideoPlayer({
 
   useEffect(() => {
     const fetchSubscription = async () => {
-      // guest users => default FREE plan with 5 mins
+      // guest users => Block playback and ask to sign in
       if (!user?._id) {
-        setPlanName("FREE");
-        setMaxMinutes(5);
+        setPlanName("GUEST");
+        setMaxMinutes(0);
         setConsumedWatchTime(0);
+        setLimitMessage("Please sign in to watch videos.");
         setIsSubscriptionLoaded(true);
         return;
       }
@@ -161,7 +162,13 @@ export default function VideoPlayer({
     if (player && videoUrl && isSubscriptionLoaded) {
       player.load();
       
-      // Only block if total limit is already reached
+      // Only block if total limit is already reached or guest
+      if (!user?._id) {
+        setIsPlaying(false);
+        setLimitMessage("Please sign in to watch videos.");
+        return;
+      }
+
       if (maxMinutes !== null && (consumedWatchTime || 0) >= (maxMinutes * 60)) {
         setIsPlaying(false);
         setLimitMessage(
@@ -252,6 +259,11 @@ export default function VideoPlayer({
   const togglePlay = () => {
     const player = videoRef.current;
     if (!player) return;
+
+    if (!user?._id) {
+      setLimitMessage("Please sign in to watch videos.");
+      return;
+    }
 
     if (maxMinutes !== null && (consumedWatchTime + pendingSyncRef.current) >= (maxMinutes * 60)) {
       setLimitMessage(

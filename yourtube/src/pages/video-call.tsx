@@ -558,25 +558,25 @@ export default function VideoCallPage() {
   };
 
   return (
-    <main className="flex-1 p-4 space-y-4">
+    <main className="flex-1 p-4 space-y-4 bg-background text-foreground transition-colors duration-500">
       <h1 className="text-2xl font-semibold">Video Call</h1>
-      <p className="text-sm text-gray-600">Start a 1:1 call using your friend&apos;s user ID.</p>
+      <p className="text-sm text-muted-foreground">Start a 1:1 call using your friend&apos;s user ID.</p>
 
-      <div className="rounded border p-3 bg-gray-50 text-sm">
+      <div className="rounded border border-border p-3 bg-muted/40 text-sm">
         <p>
-          <span className="font-medium">Your ID:</span> {selfId || "Not signed in"}
+          <span className="font-medium text-foreground">Your ID:</span> {selfId || "Not signed in"}
         </p>
         <p>
-          <span className="font-medium">Room:</span> {roomId || "-"}
+          <span className="font-medium text-foreground">Room:</span> {roomId || "-"}
         </p>
         <p>
-          <span className="font-medium">Status:</span> {status}
+          <span className="font-medium text-foreground">Status:</span> {status}
         </p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-2 md:items-center">
         <input
-          className="border px-3 py-2 rounded w-full max-w-md"
+          className="border border-border bg-input/50 px-3 py-2 rounded w-full max-w-md text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
           placeholder="Friend user ID"
           value={friendId}
           onChange={(e) => setFriendId(e.target.value)}

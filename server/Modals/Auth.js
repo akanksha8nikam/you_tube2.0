@@ -27,6 +27,11 @@ const userschema = mongoose.Schema({
   ],
   consumedWatchTime: { type: Number, default: 0 }, // in seconds
   lastWatchTimeReset: { type: Date, default: Date.now },
+
+  // MFA fields
+  phoneNumber: { type: String },
+  otp: { type: String },
+  otpExpiry: { type: Date },
 });
 
 export default mongoose.model("user", userschema);

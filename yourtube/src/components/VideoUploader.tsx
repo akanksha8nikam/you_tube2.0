@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Progress } from "./ui/progress";
+import { Textarea } from "./ui/textarea";
 import axiosInstance from "@/lib/axiosinstance";
 import axios from "axios";
 import { useRouter } from "next/router";
@@ -15,6 +16,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
+  const [videoDescription, setVideoDescription] = useState("");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [duration, setDuration] = useState("");
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -62,6 +64,7 @@ const VideoUploader = ({ channelId, channelName }: any) => {
   const resetForm = () => {
     setVideoFile(null);
     setVideoTitle("");
+    setVideoDescription("");
     setIsUploading(false);
     setUploadProgress(0);
     setUploadComplete(false);
@@ -91,6 +94,9 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     if (duration) {
       formdata.append("duration", duration);
     }
+    if (videoDescription) {
+      formdata.append("description", videoDescription);
+    }
     console.log(formdata)
     try {
       setIsUploading(true);
@@ -116,23 +122,23 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     }
   };
   return (
-    <div className="bg-gray-50 rounded-lg p-6">
+    <div className="bg-background text-foreground rounded-lg p-6 border border-border shadow-sm transition-colors duration-500">
       <h2 className="text-xl font-semibold mb-4">Upload a video</h2>
 
       <div className="space-y-4">
         {!videoFile ? (
           <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-100 transition-colors"
+            className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-            <p className="text-lg font-medium">
+            <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+            <p className="text-lg font-medium text-foreground">
               Drag and drop video files to upload
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               or click to select files
             </p>
-            <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs text-muted-foreground/60 mt-4">
               MP4, WebM, MOV or AVI • Up to 100MB
             </p>
             <input
@@ -145,13 +151,13 @@ const VideoUploader = ({ channelId, channelName }: any) => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-              <div className="bg-blue-100 p-2 rounded-md">
-                <FileVideo className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="bg-primary/10 p-2 rounded-md">
+                <FileVideo className="w-6 h-6 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{videoFile.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium truncate text-foreground">{videoFile.name}</p>
+                <p className="text-sm text-muted-foreground">
                   {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
                 </p>
               </div>
@@ -177,6 +183,17 @@ const VideoUploader = ({ channelId, channelName }: any) => {
                   placeholder="Add a title that describes your video"
                   disabled={isUploading || uploadComplete}
                   className="mt-1"
+                />
+              </div>
+              <div className="mt-4">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={videoDescription}
+                  onChange={(e) => setVideoDescription(e.target.value)}
+                  placeholder="Tell viewers about your video"
+                  disabled={isUploading || uploadComplete}
+                  className="mt-1 min-h-[120px] bg-background text-foreground"
                 />
               </div>
             </div>

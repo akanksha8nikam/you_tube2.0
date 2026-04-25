@@ -68,7 +68,7 @@ const index = () => {
   }
 
   return (
-    <div className="flex-1 min-h-screen bg-white">
+    <div className="flex-1 min-h-screen bg-background text-foreground transition-colors duration-500">
       <div className="max-w-full mx-auto">
         <ChannelHeader channel={channel} user={currentUser} />
         <Channeltabs />

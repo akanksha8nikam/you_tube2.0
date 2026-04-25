@@ -213,8 +213,8 @@ const SubscriptionPlans = () => {
         <div className="w-full p-6">
         <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold mb-2">Subscription Plans</h1>
-    <p className="text-sm text-gray-600 mb-6">
-        Current Plan: <span className="font-semibold">{currentPlan}</span>
+    <p className="text-sm text-muted-foreground mb-6">
+        Current Plan: <span className="font-semibold text-foreground">{currentPlan}</span>
         </p>
 
     {message && (
@@ -241,12 +241,12 @@ const SubscriptionPlans = () => {
                     <div
                         key={plan.name}
                 className={`rounded-xl border-2 p-4 shadow-sm ${planStyles[plan.name]} ${
-                    isCurrent ? "bg-gray-50" : "bg-white"
-                }`}
+                    isCurrent ? "bg-muted/60" : "bg-card text-card-foreground"
+                } transition-colors duration-300`}
             >
                 <h2 className="text-lg font-semibold">{plan.name}</h2>
                     <p className="text-2xl font-bold mt-2">₹{plan.price}</p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                 {isUnlimited
                     ? "Unlimited watch time"
                     : `Watch up to ${plan.maxMinutes} minutes daily`}
@@ -277,11 +277,11 @@ const SubscriptionPlans = () => {
       <div className="mt-8">
         <h3 className="text-lg font-semibold mb-3">Invoice History</h3>
         {invoiceHistory.length === 0 ? (
-          <p className="text-sm text-gray-600">No invoices yet.</p>
+          <p className="text-sm text-muted-foreground">No invoices yet.</p>
         ) : (
-          <div className="overflow-x-auto border rounded">
+          <div className="overflow-x-auto border border-border rounded">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-100">
+              <thead className="bg-muted">
                 <tr>
                   <th className="text-left p-2">Invoice ID</th>
                   <th className="text-left p-2">Plan</th>

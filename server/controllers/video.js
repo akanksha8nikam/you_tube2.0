@@ -35,6 +35,7 @@ export const uploadvideo = async (req, res) => {
         uploader: req.body.uploader,
         thumbnail: req.body.thumbnail,
         duration: req.body.duration,
+        description: req.body.description,
       });
 
       console.log("Attempting to save to MongoDB...");
@@ -87,7 +88,9 @@ export const deletevideo = async (req, res) => {
 
 export const updatevideo = async (req, res) => {
   const { id } = req.params;
-  const { videotitle, uploader } = req.body;
+  const { videotitle, description, uploader, duration } = req.body;
+
+  console.log("Update Video Request:", { id, videotitle, hasDescription: !!description, uploader });
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ message: "Video unavailable..." });
@@ -97,16 +100,26 @@ export const updatevideo = async (req, res) => {
     const videoFile = await video.findById(id);
     if (!videoFile) return res.status(404).json({ message: "Video not found" });
 
+    // Ensure uploader permission
     if (uploader && String(videoFile.uploader) !== String(uploader)) {
+      console.warn("Update blocked: Unauthorized user", { uploader, originalUploader: videoFile.uploader });
       return res.status(403).json({ message: "Not allowed to update this video" });
     }
 
+    const updateData = {};
+    if (videotitle !== undefined) updateData.videotitle = videotitle;
+    if (description !== undefined) updateData.description = description;
+    if (duration !== undefined) updateData.duration = duration;
+
+    console.log("Applying Update:", updateData);
+
     const updatedVideo = await video.findByIdAndUpdate(
       id,
-      { $set: { videotitle: videotitle, duration: req.body.duration } },
+      { $set: updateData },
       { new: true }
     );
     
+    console.log("Update successful");
     return res.status(200).json(updatedVideo);
   } catch (error) {
     console.error("Update video error:", error);
