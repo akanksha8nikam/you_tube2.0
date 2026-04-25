@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import { toast } from "sonner";
 
 type PlanName = "FREE" | "BRONZE" | "SILVER" | "GOLD";
 
@@ -43,6 +44,21 @@ const planStyles: Record<PlanName, string> = {
     BRONZE: "border-amber-500",
     SILVER: "border-slate-500",
     GOLD: "border-yellow-500",
+};
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.id = "razorpay-sdk";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 };
 
 const SubscriptionPlans = () => {
@@ -171,34 +187,89 @@ const SubscriptionPlans = () => {
 
     const handlePlanChange = async () => {
         if (!selectedPlan || !user?._id) return;
+        
         setUpdatingPlan(selectedPlan.name);
         setMessage("");
 
+        const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        if (!razorpayKey || razorpayKey === "YOUR_KEY_ID_HERE") {
+            setMessage("Razorpay Key ID is missing. Please check your .env file.");
+            setUpdatingPlan(null);
+            return;
+        }
+
         try {
-            const res = await axiosInstance.patch("/subscription/change", {
-                userId: user._id,
-                plan: selectedPlan.name,
-                paymentStatus: true,
-                paymentReference: paymentRef || `PAY-${Date.now()}`,
+            // 1. Create Order on Backend
+            const orderRes = await axiosInstance.post("/subscription/create-order", {
+                amount: selectedPlan.price,
+                currency: "INR",
+                receipt: `receipt_${user._id.slice(-6)}_${Date.now()}`
             });
 
-            setCurrentPlan(selectedPlan.name);
-            setInvoiceHistory((prev) => [res.data.invoice, ...prev]);
-            setMessage(
-              `Subscription updated to ${selectedPlan.name} successfully. Invoice ${res.data?.invoice?.invoiceId || ""} sent to your email.`
-            );
-            setCheckoutOpen(false);
-            setSelectedPlan(null);
+            const orderData = orderRes.data;
 
-            // keep AuthContext user fresh with latest subscriptionPlan
-            if (res.data?.user) {
-                login(res.data.user);
-            } else if (user) {
-                login({ ...user, subscriptionPlan: selectedPlan.name });
+            // 2. Load Razorpay Script
+            const isLoaded = await loadRazorpayScript();
+            if (!isLoaded) {
+                toast.error("Razorpay SDK failed to load. Are you online?");
+                setUpdatingPlan(null);
+                return;
             }
-        } catch (error) {
+
+            // 3. Open Razorpay Checkout
+            const options = {
+                key: razorpayKey,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "YourTube Premium",
+                description: `Upgrade to ${selectedPlan.name} Plan`,
+                image: "https://github.com/shadcn.png", // Replace with your logo
+                order_id: orderData.id,
+                handler: async function (response: any) {
+                    try {
+                        // 4. Verify Payment on Backend
+                        const verifyRes = await axiosInstance.post("/subscription/verify-payment", {
+                            userId: user._id,
+                            plan: selectedPlan.name,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                        });
+
+                        setCurrentPlan(selectedPlan.name);
+                        setInvoiceHistory((prev) => [verifyRes.data.invoice, ...prev]);
+                        setMessage(
+                            `Subscription updated to ${selectedPlan.name} successfully!`
+                        );
+                        setCheckoutOpen(false);
+                        setSelectedPlan(null);
+
+                        if (verifyRes.data?.user) {
+                            login(verifyRes.data.user);
+                        }
+                    } catch (err: any) {
+                        setMessage(err.response?.data?.message || "Payment verification failed.");
+                    }
+                },
+                prefill: {
+                    name: user.name,
+                    email: user.email,
+                },
+                theme: {
+                    color: "#3b82f6",
+                },
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                setMessage(`Payment Failed: ${response.error.description}`);
+            });
+            rzp.open();
+
+        } catch (error: any) {
             console.log("Plan update error:", error);
-            setMessage("Failed to update subscription. Please try again.");
+            const errorMsg = error.response?.data?.message || "Failed to initiate payment. Please try again.";
+            setMessage(errorMsg);
         } finally {
             setUpdatingPlan(null);
         }
@@ -344,26 +415,29 @@ const SubscriptionPlans = () => {
                 ? "Unlimited"
                 : `${selectedPlan.maxMinutes} minutes daily`}
             </p>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-600">Payment Reference</label>
-              <input
-                className="w-full border rounded px-3 py-2"
-                value={paymentRef}
-                onChange={(e) => setPaymentRef(e.target.value)}
-                placeholder="UPI/Txn reference"
-              />
-            </div>
           </div>
         )}
+
+        {message && !message.includes("successfully") && (
+          <div className="p-3 text-xs bg-red-50 border border-red-200 text-red-700 rounded-md">
+            {message}
+          </div>
+        )}
+
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setCheckoutOpen(false)}>
+          <Button variant="ghost" onClick={() => setCheckoutOpen(false)} disabled={updatingPlan !== null}>
             Cancel
           </Button>
           <Button
             onClick={handlePlanChange}
             disabled={!selectedPlan || updatingPlan !== null}
           >
-            {updatingPlan ? "Processing..." : "Pay & Upgrade"}
+            {updatingPlan ? (
+              <>
+                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                Processing...
+              </>
+            ) : "Pay & Upgrade"}
           </Button>
         </DialogFooter>
       </DialogContent>

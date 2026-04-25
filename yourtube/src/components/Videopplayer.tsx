@@ -4,8 +4,18 @@ import { useRef, useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
-import { Gauge, Maximize, Minimize } from "lucide-react";
 import { getVideoUrl } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+import { Zap, AlertTriangle, Gauge, Maximize, Minimize } from "lucide-react";
+import { Button } from "./ui/button";
+import { useRouter } from "next/router";
 
 interface VideoPlayerProps {
   video: {
@@ -53,6 +63,8 @@ export default function VideoPlayer({
   const [isSubscriptionLoaded, setIsSubscriptionLoaded] = useState(false);
   const [consumedWatchTime, setConsumedWatchTime] = useState(0); 
   const [limitMessage, setLimitMessage] = useState("");
+  const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
+  const router = useRouter();
 
   const videoUrl = getVideoUrl(video?.filepath || "");
   
@@ -76,6 +88,7 @@ export default function VideoPlayer({
     if (totalConsumedToday >= limitSec) {
       player.pause();
       setIsPlaying(false);
+      setIsLimitDialogOpen(true);
       setLimitMessage(
           `Your ${planName} plan allows only ${maxMinutes} minutes daily. You have reached your limit.`
       );
@@ -171,6 +184,7 @@ export default function VideoPlayer({
 
       if (maxMinutes !== null && (consumedWatchTime || 0) >= (maxMinutes * 60)) {
         setIsPlaying(false);
+        setIsLimitDialogOpen(true);
         setLimitMessage(
           `Your ${planName} plan allows only ${maxMinutes} minutes daily. You have reached your limit.`
         );
@@ -266,6 +280,7 @@ export default function VideoPlayer({
     }
 
     if (maxMinutes !== null && (consumedWatchTime + pendingSyncRef.current) >= (maxMinutes * 60)) {
+      setIsLimitDialogOpen(true);
       setLimitMessage(
           `Your ${planName} plan allows only ${maxMinutes} minutes daily. Upgrade to watch more.`
       );
@@ -425,11 +440,53 @@ export default function VideoPlayer({
           onContextMenu={(e) => e.preventDefault()}
         />
 
-        {limitMessage && (
-            <div className="absolute top-2 left-2 right-2 z-30 bg-red-600 text-white text-xs p-2 rounded">
-              {limitMessage}
+        {/* Limit Dialog */}
+        <Dialog open={isLimitDialogOpen} onOpenChange={setIsLimitDialogOpen}>
+          <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+                <AlertTriangle className="w-6 h-6 text-orange-500" />
+                Watch Limit Reached
+              </DialogTitle>
+              <DialogDescription className="text-zinc-400 pt-2 text-base">
+                Your <span className="text-white font-semibold">{planName}</span> plan has a daily limit of {maxMinutes} minutes. You've enjoyed all your minutes for today!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-6">
+              <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                <h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-2">Continue watching now:</h4>
+                <ul className="space-y-2 text-sm text-zinc-400">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5" />
+                    Upgrade to <span className="text-white font-medium">Silver or Gold</span> for up to unlimited watch time.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5" />
+                    Limits reset every 24 hours.
+                  </li>
+                </ul>
+              </div>
             </div>
-        )}
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsLimitDialogOpen(false)}
+                className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              >
+                Maybe Later
+              </Button>
+              <Button 
+                onClick={() => {
+                  setIsLimitDialogOpen(false);
+                  router.push("/subscriptions");
+                }}
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-8 shadow-lg shadow-orange-600/20"
+              >
+                Upgrade Plan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="absolute top-2 right-2 z-30 bg-black/70 text-white text-[10px] px-2 py-1 rounded flex flex-col items-end">
           <div>Plan: {planName}</div>

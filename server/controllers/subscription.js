@@ -1,6 +1,8 @@
 import users from "../Modals/Auth.js";
 import mongoose from "mongoose";
 import { sendSubscriptionInvoiceEmail } from "../mails/mails.js";
+import razorpayInstance from "../config/razorpay.js";
+import crypto from "crypto";
 
 const PLAN_CONFIG = {
     FREE: { name: "FREE", price: 0, maxMinutes: 5 },
@@ -59,7 +61,7 @@ export const getUserSubscription = async (req, res) => {
         if (isDifferentDay) {
             console.log(`[Subscription Action] Triggering Reset to FREE for ${user.email}`);
             user.consumedWatchTime = 0;
-            user.subscriptionPlan = "FREE"; 
+            user.subscriptionPlan = "FREE";
             user.lastWatchTimeReset = now;
             await user.save();
             console.log(`[Subscription Action] Reset successful for ${user.email}`);
@@ -220,3 +222,62 @@ export const changeSubscription = async (req, res) => {
         return res.status(500).json({ message: "Something went wrong" });
     }
 };
+
+export const createOrder = async (req, res) => {
+    const { amount, currency = "INR", receipt } = req.body;
+
+    try {
+        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+            console.error("CRITICAL: Razorpay keys missing in server/.env");
+            return res.status(500).json({ message: "Server configuration error: Missing Payment Keys" });
+        }
+
+        const options = {
+            amount: amount * 100, // Razorpay expects amount in paise
+            currency,
+            receipt: receipt || `receipt_${Date.now()}`,
+        };
+
+        const order = await razorpayInstance.orders.create(options);
+        return res.status(200).json(order);
+    } catch (error) {
+        console.error("Razorpay create order error details:", error);
+        const razorpayError = error.error?.description || error.message || "Failed to create order";
+        return res.status(500).json({ message: razorpayError });
+    }
+};
+
+export const verifyPayment = async (req, res) => {
+    const { 
+        userId, 
+        plan, 
+        razorpay_order_id, 
+        razorpay_payment_id, 
+        razorpay_signature 
+    } = req.body;
+
+    try {
+        // 1. Verify Signature
+        const body = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSignature = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .update(body.toString())
+            .digest("hex");
+
+        const isAuthentic = expectedSignature === razorpay_signature;
+
+        if (!isAuthentic) {
+            return res.status(400).json({ message: "Payment verification failed" });
+        }
+
+        // 2. Signature is authentic, now update subscription
+        req.body.paymentStatus = "PAID";
+        req.body.paymentReference = razorpay_payment_id;
+        
+        return changeSubscription(req, res);
+
+    } catch (error) {
+        console.error("Razorpay verification error:", error);
+        return res.status(500).json({ message: "Something went wrong during verification" });
+    }
+};

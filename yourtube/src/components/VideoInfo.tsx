@@ -16,6 +16,15 @@ import { useUser } from "@/lib/AuthContext";
 import axiosInstance from "@/lib/axiosinstance";
 import { useRouter } from "next/router";
 import { getVideoUrl } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+import { Zap } from "lucide-react";
 
 interface Video {
   _id: string;
@@ -41,6 +50,8 @@ const VideoInfo = ({ video }: { video: Video }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [downloadLabel, setDownloadLabel] = useState("Download");
   const [downloadUsageText, setDownloadUsageText] = useState("");
+  const [isLimitDialogOpen, setIsLimitDialogOpen] = useState(false);
+  const [limitType, setLimitType] = useState<"download" | "premium">("download");
 
   // Update state when video changes
   useEffect(() => {
@@ -180,8 +191,9 @@ const VideoInfo = ({ video }: { video: Video }) => {
         userId: user._id,
       });
       if (!gateRes.data?.allowed) {
-        setDownloadLabel("Premium required");
-        if (gateRes.data?.premiumRequired) router.push("/subscriptions");
+        setLimitType(gateRes.data?.premiumRequired ? "premium" : "download");
+        setIsLimitDialogOpen(true);
+        setDownloadLabel("Limit Reached");
         setTimeout(() => setDownloadLabel("Download"), 1500);
         return;
       }
@@ -198,8 +210,11 @@ const VideoInfo = ({ video }: { video: Video }) => {
       }
     } catch (error: any) {
       const premiumRequired = error?.response?.data?.premiumRequired;
+      if (premiumRequired) {
+        setLimitType("premium");
+        setIsLimitDialogOpen(true);
+      }
       setDownloadLabel(premiumRequired ? "Premium required" : "Failed");
-      if (premiumRequired) router.push("/subscriptions");
       setTimeout(() => setDownloadLabel("Download"), 1500);
       return;
     }
@@ -297,10 +312,14 @@ const VideoInfo = ({ video }: { video: Video }) => {
           <Button
             variant="ghost"
             size="sm"
-            className="bg-muted/60 rounded-full"
+            className={`rounded-full transition-all duration-300 ${
+              user?.subscriptionPlan !== "FREE" 
+              ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 border-none shadow-lg shadow-indigo-500/20" 
+              : "bg-muted/60"
+            }`}
             onClick={handleDownload}
           >
-            <Download className="w-5 h-5 mr-2" />
+            <Download className={`w-5 h-5 mr-2 ${user?.subscriptionPlan !== "FREE" ? "animate-bounce" : ""}`} />
             {downloadLabel}
           </Button>
 
@@ -309,9 +328,63 @@ const VideoInfo = ({ video }: { video: Video }) => {
           </Button>
         </div>
       </div>
+      
       {downloadUsageText && (
-        <p className="text-xs text-muted-foreground">{downloadUsageText}</p>
+        <p className={`text-xs font-medium mt-1 ${user?.subscriptionPlan === "FREE" ? "text-muted-foreground" : "text-indigo-400"}`}>
+          {user?.subscriptionPlan !== "FREE" && <Zap className="w-3 h-3 inline mr-1" />}
+          {downloadUsageText}
+        </p>
       )}
+
+      {/* Limit Dialog */}
+      <Dialog open={isLimitDialogOpen} onOpenChange={setIsLimitDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <Zap className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+              {limitType === "premium" ? "Premium Feature" : "Daily Limit Reached"}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 pt-2 text-base">
+              {limitType === "premium" 
+                ? "Downloading videos is a premium feature. Upgrade your plan to unlock high-quality offline viewing!"
+                : "You've reached your daily download limit for your current plan. Upgrade to a higher tier for more downloads!"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+              <h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-2">What you can do next:</h4>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5" />
+                  Upgrade to <span className="text-white font-medium">Silver or Gold</span> for up to unlimited downloads.
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5" />
+                  Enjoy ad-free experience and higher watch time limits.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsLimitDialogOpen(false)}
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            >
+              Maybe Later
+            </Button>
+            <Button 
+              onClick={() => {
+                setIsLimitDialogOpen(false);
+                router.push("/subscriptions");
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-600/20"
+            >
+              Upgrade Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Description */}
       <div className="bg-muted/40 rounded-lg p-4 border border-border">
