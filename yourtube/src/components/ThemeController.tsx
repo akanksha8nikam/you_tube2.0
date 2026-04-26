@@ -17,9 +17,12 @@ export default function ThemeController() {
       try {
         // 1. Get Location
         // Using ipapi.co for state-level geolocation
-        const geoResponse = await fetch('https://ipapi.co/json/');
-        const geoData = await geoResponse.json();
-        const userState = geoData.region;
+        const geoResponse = await fetch('https://ipapi.co/json/').catch(() => null);
+        let userState = "Other";
+        if (geoResponse) {
+          const geoData = await geoResponse.json().catch(() => ({}));
+          userState = geoData.region || "Other";
+        }
 
         // 2. Get Time in IST
         const now = new Date();

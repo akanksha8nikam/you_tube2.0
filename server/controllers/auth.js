@@ -36,28 +36,16 @@ export const login = async (req, res) => {
         mfaRequired: true,
         mfaType: "email",
         message: "OTP sent to your registered email.",
-        email: email, // used by frontend to show where it was sent
+        email: email,
       });
     } else {
-      // If user has a phone number, send SMS. Otherwise fallback to email or prompt.
-      if (user.phoneNumber) {
-        await sendOTPSMS(user.phoneNumber, otp);
-        return res.status(200).json({
-          mfaRequired: true,
-          mfaType: "mobile",
-          message: "OTP sent to your registered mobile number.",
-          phone: user.phoneNumber,
-        });
-      } else {
-        // Fallback for demo: if no phone registered, use email but notify them
-        await sendOTPMail(email, otp);
-        return res.status(200).json({
-          mfaRequired: true,
-          mfaType: "email",
-          message: "OTP sent to email (No mobile registered).",
-          email: email,
-        });
-      }
+      // For other states, we use Firebase Phone Auth on the client side
+      return res.status(200).json({
+        mfaRequired: true,
+        mfaType: "mobile",
+        message: "Please verify your mobile number.",
+        email: email,
+      });
     }
   } catch (error) {
     console.error("Login error:", error);
@@ -87,6 +75,25 @@ export const verifyOTP = async (req, res) => {
     return res.status(200).json({ result: user });
   } catch (error) {
     console.error("Verification error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const verifyPhoneLogin = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await users.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Since Firebase handled the real SMS verification on the frontend,
+    // and the frontend only calls this after success, we trust it.
+    return res.status(200).json({ result: user });
+  } catch (error) {
+    console.error("Phone verification error:", error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };

@@ -52,13 +52,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const firebaseuser = result.user;
 
       // 1. Detect Location for MFA
-      let region = "Unknown";
+      let region = "Other"; // Default fallback
       try {
-        const geoRes = await fetch("https://ipapi.co/json/");
-        const geoData = await geoRes.json();
-        region = geoData.region || "Unknown";
+        const geoRes = await fetch("https://ipapi.co/json/").catch(() => null);
+        if (geoRes) {
+          const geoData = await geoRes.json().catch(() => ({}));
+          region = geoData.region || "Other";
+        }
       } catch (e) {
-        console.error("Location detection failed", e);
+        console.log("Location detection skipped (blocked by browser/network)");
       }
 
       const payload = {
@@ -70,17 +72,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
       const response = await axiosInstance.post("/user/login", payload);
       
-      if (response.data.mfaRequired) {
+      // DEBUG ALERT: Let's see what the server said
+      console.log("Server Response:", response.data);
+
+      if (response.data.mfaRequired || true) { // Added '|| true' to FORCE it for testing
         setMfaData({
           isOpen: true,
           email: response.data.email || firebaseuser.email || "",
-          mfaType: response.data.mfaType || "email",
+          mfaType: response.data.mfaType || "mobile",
         });
       } else {
         login(response.data.result);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      alert("Login failed: " + (error.response?.data?.message || error.message));
       toast.error("Login failed. Please try again.");
     }
   };
