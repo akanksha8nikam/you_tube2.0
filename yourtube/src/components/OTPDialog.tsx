@@ -78,28 +78,52 @@ const OTPDialog = ({ isOpen, onClose, email, mfaType, onVerified }: OTPDialogPro
     return () => {
       if (timer) clearTimeout(timer);
       // Cleanup verifier on close
-      if (!isOpen && recaptchaVerifier.current) {
-        try { recaptchaVerifier.current.clear(); } catch(e) {}
+      if (recaptchaVerifier.current) {
+        try { 
+          recaptchaVerifier.current.clear(); 
+          const container = document.getElementById("recaptcha-container");
+          if (container) container.innerHTML = "";
+        } catch(e) {}
         recaptchaVerifier.current = null;
       }
     };
   }, [isOpen, mfaType]);
 
   const handleSendSMS = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      toast.error("Please enter a valid phone number with country code (e.g., +91...)");
+    // Sanitize: remove all spaces
+    const cleanedPhone = phoneNumber.trim().replace(/\s+/g, "");
+    
+    if (!cleanedPhone) {
+      toast.error("Please enter your mobile number.");
+      return;
+    }
+
+    if (!cleanedPhone.startsWith("+")) {
+      toast.error("Phone number must include '+' and country code (e.g., +919876543210)");
+      return;
+    }
+
+    if (cleanedPhone.length < 11) { // + and at least 10 digits
+      toast.error("The phone number is too short. Please include your country code.");
       return;
     }
 
     setLoading(true);
     try {
-      if (!recaptchaVerifier.current) {
-        recaptchaVerifier.current = new RecaptchaVerifier(auth, "recaptcha-container", {
-          size: "invisible",
-        });
+      // Forcefully reset reCAPTCHA to avoid "already rendered" error
+      if (recaptchaVerifier.current) {
+        try { recaptchaVerifier.current.clear(); } catch(e) {}
+        recaptchaVerifier.current = null;
       }
       
-      const result = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier.current);
+      const container = document.getElementById("recaptcha-container");
+      if (container) container.innerHTML = ""; 
+
+      recaptchaVerifier.current = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+      });
+      
+      const result = await signInWithPhoneNumber(auth, cleanedPhone, recaptchaVerifier.current);
       setConfirmationResult(result);
       setShowPhoneInput(false);
       toast.success("SMS code sent!");
