@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import { useUser } from "@/lib/AuthContext";
+import { useCall } from "@/lib/CallContext";
+import { useRouter } from "next/router";
 
 const SIGNALING_SERVER_URL =
   process.env.NEXT_PUBLIC_SIGNALING_URL || "http://localhost:5000";
@@ -18,11 +20,13 @@ export default function VideoCallPage() {
   const { user } = useUser() as { user: any };
   const selfId = user?._id || user?.id || "";
 
+  const { socket } = useCall();
+  const router = useRouter();
+
   const [friendId, setFriendId] = useState("");
   const [status, setStatus] = useState("Ready");
   const [isInCall, setIsInCall] = useState(false);
   const [roomId, setRoomId] = useState("");
-  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [isRecording, setIsRecording] = useState(false);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -161,10 +165,31 @@ export default function VideoCallPage() {
   };
 
   const cleanup = (disconnectSocket = false, stopLocalTracks = true) => {
-    stopRecording();
+    try { stopRecording(); } catch (e) {}
+
+    if (stopLocalTracks) {
+      localStreamRef.current?.getTracks().forEach((track) => {
+        try { track.stop(); } catch (e) {}
+      });
+      localStreamRef.current = null;
+      if (localVideoRef.current) localVideoRef.current.srcObject = null;
+
+      screenStreamRef.current?.getTracks().forEach((track) => {
+        try { track.stop(); } catch (e) {}
+      });
+      screenStreamRef.current = null;
+      if (localScreenVideoRef.current) localScreenVideoRef.current.srcObject = null;
+      setIsScreenSharing(false);
+    }
+
     const socket = socketRef.current;
     if (socket && roomRef.current && selfIdRef.current) {
-      socket.emit("call:leave", { roomId: roomRef.current, userId: selfIdRef.current });
+      try {
+        socket.emit("call:leave", { roomId: roomRef.current, userId: selfIdRef.current });
+        if (peerUserIdRef.current) {
+          socket.emit("call:reject", { toUserId: peerUserIdRef.current, fromUserId: selfIdRef.current });
+        }
+      } catch (e) {}
     }
 
     clearPeerConnection();
@@ -175,34 +200,37 @@ export default function VideoCallPage() {
       socketRef.current = null;
     }
 
-    if (stopLocalTracks) {
-      localStreamRef.current?.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
-      if (localVideoRef.current) localVideoRef.current.srcObject = null;
-
-      screenStreamRef.current?.getTracks().forEach((track) => track.stop());
-      screenStreamRef.current = null;
-      if (localScreenVideoRef.current) localScreenVideoRef.current.srcObject = null;
-      setIsScreenSharing(false);
-    }
-
     roomRef.current = "";
     peerUserIdRef.current = "";
     setRoomId("");
     setIsInCall(false);
-    setIncomingCall(null);
     setStatus("Call ended");
   };
 
   const ensureLocalMedia = async () => {
     if (localStreamRef.current) return;
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    localStreamRef.current = stream;
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      // If cleanup was called while waiting for media, stop tracks immediately
+      if (!roomRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      // If a stream was already set by a parallel execution, stop this new one
+      if (localStreamRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      localStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error("Local media error:", error);
+      throw error;
     }
   };
 
@@ -246,57 +274,31 @@ export default function VideoCallPage() {
   };
 
   useEffect(() => {
-    if (socketRef.current) return;
-
-    const socket = io(SIGNALING_SERVER_URL, {
-      transports: ["websocket", "polling"],
-    });
+    if (!socket) return;
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      if (selfIdRef.current) {
-        socket.emit("call:register", { userId: selfIdRef.current });
-      }
-      if (roomRef.current && selfIdRef.current) {
-        socket.emit("call:join", { roomId: roomRef.current, userId: selfIdRef.current });
-      }
-    });
-
-    socket.on("disconnect", (reason) => {
-      if (roomRef.current) {
-        setStatus(`Connection lost (${reason}). Reconnecting...`);
-      }
-    });
-
-    socket.on("call:incoming", ({ roomId: incomingRoomId, fromUserId }: IncomingCall) => {
-      setIncomingCall({ roomId: incomingRoomId, fromUserId });
-      setStatus(`Incoming call from ${fromUserId}`);
-    });
-
-    socket.on("call:invite-status", ({ ok, reason }: { ok: boolean; reason?: string }) => {
+    const handleInviteStatus = ({ ok, reason }: { ok: boolean; reason?: string }) => {
       if (!ok) {
         cleanup(false, true);
         setStatus(reason || "Call could not be started.");
       }
-    });
+    };
 
-    socket.on("call:rejected", ({ fromUserId }: { fromUserId: string }) => {
+    const handleRejected = ({ fromUserId }: { fromUserId: string }) => {
       cleanup(false, true);
       setStatus(`Call rejected by ${fromUserId}`);
-    });
+    };
 
-    socket.on("call:joined", ({ participantCount }: { participantCount: number }) => {
+    const handleJoined = ({ participantCount }: { participantCount: number }) => {
       setIsInCall(true);
       setStatus(participantCount > 1 ? "Peer joined, negotiating..." : "Waiting for friend...");
-    });
+    };
 
-    socket.on("call:peer-joined", () => {
+    const handlePeerJoined = () => {
       setStatus("Peer joined.");
-    });
+    };
 
-    socket.on(
-      "call:accepted",
-      async ({ fromUserId, roomId: acceptedRoomId }: { fromUserId: string; roomId: string }) => {
+    const handleAccepted = async ({ fromUserId, roomId: acceptedRoomId }: { fromUserId: string; roomId: string }) => {
         if (!peerRef.current || !roomRef.current || !socketRef.current) return;
         if (roomRef.current !== acceptedRoomId) return;
         if (isMakingOfferRef.current) return;
@@ -316,10 +318,9 @@ export default function VideoCallPage() {
         } finally {
           isMakingOfferRef.current = false;
         }
-      }
-    );
+    };
 
-    socket.on("call:offer", async ({ offer }: { offer: RTCSessionDescriptionInit }) => {
+    const handleOffer = async ({ offer }: { offer: RTCSessionDescriptionInit }) => {
       if (!peerRef.current || !roomRef.current) return;
       try {
         await peerRef.current.setRemoteDescription(new RTCSessionDescription(offer));
@@ -341,9 +342,9 @@ export default function VideoCallPage() {
         console.error("Answer creation failed:", error);
         setStatus("Failed to answer call.");
       }
-    });
+    };
 
-    socket.on("call:answer", async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
+    const handleAnswer = async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
       if (!peerRef.current) return;
       try {
         await peerRef.current.setRemoteDescription(new RTCSessionDescription(answer));
@@ -358,9 +359,9 @@ export default function VideoCallPage() {
         console.error("Set answer failed:", error);
         setStatus("Failed to connect call.");
       }
-    });
+    };
 
-    socket.on("call:ice-candidate", async ({ candidate }: { candidate: RTCIceCandidateInit }) => {
+    const handleIceCandidate = async ({ candidate }: { candidate: RTCIceCandidateInit }) => {
       if (!peerRef.current) return;
       if (!peerRef.current.remoteDescription) {
         iceCandidatesQueueRef.current.push(candidate);
@@ -371,24 +372,78 @@ export default function VideoCallPage() {
           console.error("ICE candidate add failed:", error);
         }
       }
-    });
+    };
 
-    socket.on("call:peer-left", () => {
+    const handlePeerLeft = () => {
       cleanup(false, true);
       setStatus("Peer left.");
-    });
+    };
 
-    return () => cleanup(true, true);
+    socket.on("call:invite-status", handleInviteStatus);
+    socket.on("call:rejected", handleRejected);
+    socket.on("call:joined", handleJoined);
+    socket.on("call:peer-joined", handlePeerJoined);
+    socket.on("call:accepted", handleAccepted);
+    socket.on("call:offer", handleOffer);
+    socket.on("call:answer", handleAnswer);
+    socket.on("call:ice-candidate", handleIceCandidate);
+    socket.on("call:peer-left", handlePeerLeft);
+
+    return () => {
+      socket.off("call:invite-status", handleInviteStatus);
+      socket.off("call:rejected", handleRejected);
+      socket.off("call:joined", handleJoined);
+      socket.off("call:peer-joined", handlePeerJoined);
+      socket.off("call:accepted", handleAccepted);
+      socket.off("call:offer", handleOffer);
+      socket.off("call:answer", handleAnswer);
+      socket.off("call:ice-candidate", handleIceCandidate);
+      socket.off("call:peer-left", handlePeerLeft);
+      cleanup(false, true);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [socket]);
 
   useEffect(() => {
     selfIdRef.current = selfId;
-    if (!selfId || !socketRef.current) return;
-    if (socketRef.current.connected) {
-      socketRef.current.emit("call:register", { userId: selfId });
+    // Auto accept call if query params say so
+    if (!selfId || !socket) return;
+    if (router.query.action === "accept" && router.query.roomId && router.query.friendId) {
+      const friendIdStr = router.query.friendId as string;
+      const roomIdStr = router.query.roomId as string;
+      
+      const doAutoAccept = async () => {
+        cleanup(false, false);
+        roomRef.current = roomIdStr;
+        peerUserIdRef.current = friendIdStr;
+        setRoomId(roomIdStr);
+        setFriendId(friendIdStr);
+        setStatus("Joining call...");
+        
+        try {
+          await ensureLocalMedia();
+          buildPeer(roomIdStr);
+        } catch (error) {
+          console.error("Local media error:", error);
+          cleanup(false, true);
+          setStatus("Camera/microphone permission is required to accept call.");
+          return;
+        }
+        
+        socket.emit("call:join", { roomId: roomIdStr, userId: selfId });
+        socket.emit("call:accept", {
+          roomId: roomIdStr,
+          toUserId: friendIdStr,
+          fromUserId: selfId,
+        });
+        setStatus("Call accepted. Connecting...");
+        
+        router.replace("/video-call", undefined, { shallow: true });
+      };
+      
+      doAutoAccept();
     }
-  }, [selfId]);
+  }, [router.query, selfId, socket]);
 
   const renegotiateOffer = async () => {
     if (!peerRef.current || !socketRef.current || !roomRef.current) return;
@@ -517,45 +572,7 @@ export default function VideoCallPage() {
     });
   };
 
-  const acceptCall = async () => {
-    if (!selfId || !incomingCall || !socketRef.current) return;
 
-    cleanup(false, false);
-
-    roomRef.current = incomingCall.roomId;
-    peerUserIdRef.current = incomingCall.fromUserId;
-    setRoomId(incomingCall.roomId);
-    setFriendId(incomingCall.fromUserId);
-    setIncomingCall(null);
-    setStatus("Joining call...");
-
-    try {
-      await ensureLocalMedia();
-      buildPeer(incomingCall.roomId);
-    } catch (error) {
-      console.error("Local media error:", error);
-      cleanup(false, true);
-      setStatus("Camera/microphone permission is required to accept call.");
-      return;
-    }
-    socketRef.current.emit("call:join", { roomId: incomingCall.roomId, userId: selfId });
-    socketRef.current.emit("call:accept", {
-      roomId: incomingCall.roomId,
-      toUserId: incomingCall.fromUserId,
-      fromUserId: selfIdRef.current,
-    });
-    setStatus("Call accepted. Connecting...");
-  };
-
-  const rejectCall = () => {
-    if (!selfId || !incomingCall || !socketRef.current) return;
-    socketRef.current.emit("call:reject", {
-      toUserId: incomingCall.fromUserId,
-      fromUserId: selfIdRef.current,
-    });
-    setStatus("Incoming call declined.");
-    setIncomingCall(null);
-  };
 
   return (
     <main className="flex-1 p-4 space-y-4 bg-background text-foreground transition-colors duration-500">
@@ -633,27 +650,7 @@ export default function VideoCallPage() {
         )}
       </div>
 
-      {incomingCall && (
-        <div className="rounded border border-green-300 bg-green-50 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <p className="text-sm">
-            Incoming call from <span className="font-medium">{incomingCall.fromUserId}</span>
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="px-4 py-2 rounded bg-green-600 text-white"
-              onClick={acceptCall}
-            >
-              Accept
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-red-600 text-white"
-              onClick={rejectCall}
-            >
-              Reject
-            </button>
-          </div>
-        </div>
-      )}
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

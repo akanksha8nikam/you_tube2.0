@@ -201,6 +201,17 @@ io.on("connection", (socket) => {
     if (!disconnectedUserId || !disconnectedRoomId) return;
 
     const pendingKey = `${disconnectedUserId}::${disconnectedRoomId}`;
+
+    // Immediately notify the other user in the room that the call is cancelled/ended
+    const users = disconnectedRoomId.split("-");
+    const otherUserId = users.find((id) => id !== disconnectedUserId);
+    if (otherUserId) {
+      const otherSocketId = userSocketMap.get(otherUserId);
+      if (otherSocketId) {
+        io.to(otherSocketId).emit("call:rejected", { fromUserId: disconnectedUserId });
+      }
+    }
+
     const timeout = setTimeout(() => {
       pendingDisconnects.delete(pendingKey);
       if (userSocketMap.has(disconnectedUserId)) return;

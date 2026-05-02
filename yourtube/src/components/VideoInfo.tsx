@@ -242,7 +242,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{video?.videotitle}</h1>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Channel Info */}
         <div className="flex items-center gap-4">
           <Avatar className="w-10 h-10">
@@ -259,7 +259,7 @@ const VideoInfo = ({ video }: { video: Video }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center bg-muted/60 rounded-full">
             <Button
               variant="ghost"
@@ -312,10 +312,10 @@ const VideoInfo = ({ video }: { video: Video }) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`rounded-full transition-all duration-300 ${
+            className={`rounded-full transition-all duration-300 bg-blue-700 hover:bg-blue-800 text-white shadow-md ${
               user?.subscriptionPlan !== "FREE" 
-              ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 border-none shadow-lg shadow-indigo-500/20" 
-              : "bg-muted/60"
+              ? "shadow-blue-500/30" 
+              : ""
             }`}
             onClick={handleDownload}
           >
